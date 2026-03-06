@@ -1,0 +1,27 @@
+#EXTM3U
+#EXTINF:-1,Arena Sport 1
+https://7pal.short.gy/arenas1
+#EXTINF:-1,Arena Sport 2
+https://7pal.short.gy/arenas2
+#EXTINF:-1,Arena Sport 3
+https://7pal.short.gy/arenas3
+#EXTINF:-1,Arena Sport 4
+https://7pal.short.gy/arenas4
+#EXTINF:-1,VIASAT SPORT
+http://g-med.xyz:25461/live/aleksanar_vujadinovic/anhuZ7SAj3hF/617.m3u8
+#EXTINF:-1,VIASAT SPORT PREMIUM
+http://g-med.xyz:25461/live/aleksanar_vujadinovic/anhuZ7SAj3hF/618.m3u8
+#EXTINF:-1,VIASAT FOTBOLL
+http://g-med.xyz:25461/live/aleksanar_vujadinovic/anhuZ7SAj3hF/619.m3u8
+#EXTINF:-1,PT: Eleven Sports 1
+http://filex.me:8080//live/MAS101A/MAS101AABB/316811.m3u8
+#EXTINF:-1,PT: Eleven Sports 2
+http://filex.me:8080//live/MAS101A/MAS101AABB/316812.m3u8
+#EXTINF:-1,PT: Eleven Sports 3
+http://filex.me:8080//live/MAS101A/MAS101AABB/316813.m3u8
+#EXTINF:-1,PT: Eleven Sports 4
+http://filex.me:8080//live/MAS101A/MAS101AABB/316814.m3u8
+#EXTINF:-1,PT: Eleven Sports 5
+http://filex.me:8080//live/MAS101A/MAS101AABB/316815.m3u8
+#EXTINF:-1,PT: Eleven Sports 6
+http://filex.me:8080//live/MAS101A/MAS101AABB/316816.m3u8

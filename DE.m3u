@@ -1,0 +1,19 @@
+#EXTM3U
+#EXTINF:-1,DAZN 1 Bar
+http://g-med.xyz:25461/live/aleksanar_vujadinovic/anhuZ7SAj3hF/91769.m3u8
+#EXTINF:-1,DAZN 2 Bar
+http://g-med.xyz:25461/live/aleksanar_vujadinovic/anhuZ7SAj3hF/91783.m3u8
+#EXTINF:-1,DAZN EVENT 1
+http://g-med.xyz:25461/live/aleksanar_vujadinovic/anhuZ7SAj3hF/91797.m3u8
+#EXTINF:-1,DAZN EVENT 2
+http://g-med.xyz:25461/live/aleksanar_vujadinovic/anhuZ7SAj3hF/91799.m3u8
+#EXTINF:-1,DAZN EVENT 3
+http://g-med.xyz:25461/live/aleksanar_vujadinovic/anhuZ7SAj3hF/91801.m3u8
+#EXTINF:-1,Sky Sport Mix
+http://g-med.xyz:25461/live/aleksanar_vujadinovic/anhuZ7SAj3hF/94775.m3u8
+#EXTINF:-1,Sky Sport Bundesliga FHD
+https://a1xs.vip/120002
+#EXTINF:-1,Sky Sport Top Event FHD
+https://a1xs.vip/120003
+#EXTINF:-1,Sky Sport EPL FHD
+https://a1xs.vip/120004
