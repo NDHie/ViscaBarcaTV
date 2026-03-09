@@ -20,35 +20,35 @@ http://gr.seetv.cc/play/5036/D70CC021CA87DF2/video.m3u8
 #EXTINF:-1,Pimple 6
 http://gr.seetv.cc/play/5037/D70CC021CA87DF2/video.m3u8
 
-#EXTINF:-1 tvg-logo="https://i.ibb.co.com/xS2fqz2s/shareext-logo-Liga-Club.jpg" group-title="SHAREEXT@ WORLD_OF || SPORTS",BEIN SPORTS ∆∆
+#EXTINF:-1,BEIN SPORTS ∆∆
 http://104.194.8.54:9090/161161_.m3u8 
-#EXTINF:-1 tvg-logo="https://i.ibb.co.com/xS2fqz2s/shareext-logo-Liga-Club.jpg" group-title="SHAREEXT@ WORLD_OF || SPORTS",BEIN SPORTS n ∆∆
+#EXTINF:-1,BEIN SPORTS n ∆∆
 http://104.238.222.251:9090/279422_.m3u8
-#EXTINF:-1 tvg-logo="https://i.ibb.co.com/xS2fqz2s/shareext-logo-Liga-Club.jpg" group-title="SHAREEXT@ WORLD_OF || SPORTS",BT SPORT 1 ∆∆
+#EXTINF:-1,BT SPORT 1 ∆∆
 http://199.127.63.143:9090/306168_.m3u8 
-#EXTINF:-1 tvg-logo="https://i.ibb.co.com/xS2fqz2s/shareext-logo-Liga-Club.jpg" group-title="SHAREEXT@ WORLD_OF || SPORTS",BT SPORT 2 ∆∆
+#EXTINF:-1,BT SPORT 2 ∆∆
 http://199.127.63.143:9090/306169_.m3u8 
-#EXTINF:-1 tvg-logo="https://i.ibb.co.com/xS2fqz2s/shareext-logo-Liga-Club.jpg" group-title="SHAREEXT@ WORLD_OF || SPORTS",CBS SPORTS NETWORK ∆∆
+#EXTINF:-1,CBS SPORTS NETWORK ∆∆
 http://199.127.63.143:9090/279514_.m3u8 
-#EXTINF:-1 tvg-logo="https://i.ibb.co.com/xS2fqz2s/shareext-logo-Liga-Club.jpg" group-title="SHAREEXT@ WORLD_OF || SPORTS",DIRECTV SPORTS ∆∆
+#EXTINF:-1,DIRECTV SPORTS ∆∆
 http://104.238.205.28:9090/299317_.m3u8 
-#EXTINF:-1 tvg-logo="https://i.ibb.co.com/xS2fqz2s/shareext-logo-Liga-Club.jpg" group-title="SHAREEXT@ WORLD_OF || SPORTS",DIRECTV SPORTS 2 ∆∆
+#EXTINF:-1,DIRECTV SPORTS 2 ∆∆
 http://104.238.205.28:9090/299313_.m3u8 
-#EXTINF:-1 tvg-logo="https://i.ibb.co.com/xS2fqz2s/shareext-logo-Liga-Club.jpg" group-title="SHAREEXT@ WORLD_OF || SPORTS",DIRECTV SPORTS PLUS ∆∆
+#EXTINF:-1,DIRECTV SPORTS PLUS ∆∆
 http://104.238.205.28:9090/299312_.m3u8 
-#EXTINF:-1 tvg-logo="https://i.ibb.co.com/xS2fqz2s/shareext-logo-Liga-Club.jpg" group-title="SHAREEXT@ WORLD_OF || SPORTS",ESPN ∆∆
+#EXTINF:-1,ESPN ∆∆
 http://104.194.8.54:9090/279424_.m3u8 
-#EXTINF:-1 tvg-logo="https://i.ibb.co.com/xS2fqz2s/shareext-logo-Liga-Club.jpg" group-title="SHAREEXT@ WORLD_OF || SPORTS",ESPN 2 ∆∆
+#EXTINF:-1,ESPN 2 ∆∆
 http://79.143.17.114:9090/279425_.m3u8 
-#EXTINF:-1 tvg-logo="https://i.ibb.co.com/xS2fqz2s/shareext-logo-Liga-Club.jpg" group-title="SHAREEXT@ WORLD_OF || SPORTS",ESPN NEWS ∆∆
+#EXTINF:-1,ESPN NEWS ∆∆
 http://199.127.63.143:9090/279428_.m3u8 
-#EXTINF:-1 tvg-logo="https://i.ibb.co.com/xS2fqz2s/shareext-logo-Liga-Club.jpg" group-title="SHAREEXT@ WORLD_OF || SPORTS",ESPN DEPORTES ∆∆
+#EXTINF:-1,ESPN DEPORTES ∆∆
 http://199.127.63.143:9090/279426_.m3u8 
-#EXTINF:-1 tvg-logo="https://i.ibb.co.com/xS2fqz2s/shareext-logo-Liga-Club.jpg" group-title="SHAREEXT@ WORLD_OF || SPORTS",ESPN U ∆∆
+#EXTINF:-1,ESPN U ∆∆
 http://79.143.17.114:9090/279427_.m3u8 
-#EXTINF:-1 tvg-logo="https://i.ibb.co.com/xS2fqz2s/shareext-logo-Liga-Club.jpg" group-title="SHAREEXT@ WORLD_OF || SPORTS",ELEVEN SPORTS NETWORK ∆∆
+#EXTINF:-1,ELEVEN SPORTS NETWORK ∆∆
 http://104.238.222.251:9090/279423_.m3u8 
-#EXTINF:-1 tvg-logo="https://i.ibb.co.com/xS2fqz2s/shareext-logo-Liga-Club.jpg" group-title="SHAREEXT@ WORLD_OF || SPORTS",FANDUEL SPORTS NETWORK ∆∆
+#EXTINF:-1,FANDUEL SPORTS NETWORK ∆∆
 http://79.143.17.114:9090/279487_.m3u8 
 #EXTINF:-1 tvg-logo="https://i.ibb.co.com/xS2fqz2s/shareext-logo-Liga-Club.jpg" group-title="SHAREEXT@ WORLD_OF || SPORTS",FANDUEL TV RACING ∆∆
 http://199.127.63.143:9090/279482_.m3u8 
