@@ -21,3 +21,9 @@ http://195.128.27.141:80/play/live.php?mac=00:1A:79:24:1B:18&stream=1776175&exte
 http://195.128.27.141:80/play/live.php?mac=00:1A:79:24:1B:18&stream=1776176&extension=m3u8
 #EXTINF:-1,CANAL+ SPORT HD
 http://ch-4k-top.org:80/play/live.php?mac=00:1A:79:7a:39:a6&stream=1184930&extension=ts&play_token=fHBckk00nW
+#EXTINF:-1,Super Sport 1 FHD
+https://a1xs.vip/130001
+#EXTINF:-1,Super Sport 2 FHD
+https://a1xs.vip/130002
+#EXTINF:-1,Super Sport 3 FHD
+https://a1xs.vip/130003
