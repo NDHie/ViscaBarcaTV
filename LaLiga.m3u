@@ -11,12 +11,6 @@ http://bocian.io:8880/7869-00-3/NzkwMTk2MTI3/105526
 http://bocian.io:8880/7869-00-3/NzkwMTk2MTI3/105527
 #EXTINF:-1,Eleven Sports 4 HD PL
 http://bocian.io:8880/7869-00-3/NzkwMTk2MTI3/105528
-#EXTINF:-1,Max Sport 1 HD
-http://ch-4k-top.org:80/play/live.php?mac=00:1A:79:7a:39:a6&stream=31801&extension=ts&play_token=MAaXIbHwPF
-#EXTINF:-1,Max Sport 2 HD
-http://ch-4k-top.org:80/play/live.php?mac=00:1A:79:7a:39:a6&stream=31802&extension=ts&play_token=oKVP0gjuIKp
-#EXTINF:-1,Max Sport 4 HD
-http://ch-4k-top.org:80/play/live.php?mac=00:1A:79:7a:39:a6&stream=31804&extension=ts&play_token=h5UuqXNs2K
 #EXTINF:-1,C MORE FOTBOOL
 http://g-med.xyz:25461/live/aleksanar_vujadinovic/anhuZ7SAj3hF/635.m3u8
 #EXTINF:-1,C MORE LIVE
@@ -27,7 +21,7 @@ http://g-med.xyz:25461/live/aleksanar_vujadinovic/anhuZ7SAj3hF/637.m3u8
 http://front-main.eagle-4k.me/live/rmt8r91bac/tsleey7v5g/1075461.m3u8
 #EXTINF:-1,GO3 SPORT 2
 http://front-main.eagle-4k.me/live/rmt8r91bac/tsleey7v5g/1075457.m3u8
-#EXTINF:-1,GO3 SPORT 3
-http://front-main.eagle-4k.me/live/rmt8r91bac/tsleey7v5g/1075459.m3u8
 #EXTINF:-1,GO3 SPORT OPEN
 http://front-main.eagle-4k.me/live/rmt8r91bac/tsleey7v5g/1075463.m3u8
+#EXTINF:-1,GO3 SPORT 3
+http://front-main.eagle-4k.me/live/rmt8r91bac/tsleey7v5g/1075459.m3u8
