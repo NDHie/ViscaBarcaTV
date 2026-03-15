@@ -19,18 +19,20 @@ http://81.31.194.66:8080/live/pro6471767597753/bf04b3f4a067/1471.m3u8
 http://81.31.194.66:8080/live/pro6471767597753/bf04b3f4a067/1472.m3u8
 #EXTINF:-1,DAZN 6
 http://81.31.194.66:8080/live/pro6471767597753/bf04b3f4a067/1473.m3u8
-#EXTINF:-1,Ziggo Sport FHD
-https://a1xs.vip/140001
-#EXTINF:-1,Ziggo Sport 2 FHD
-https://a1xs.vip/140002
-#EXTINF:-1,Ziggo Sport 3 FHD
-https://a1xs.vip/140003
-#EXTINF:-1,Ziggo Sport 4 FHD
-https://a1xs.vip/140004
-#EXTINF:-1,ZIGGO SPORT EXTRA 1
-http://g-med.xyz:25461/live/aleksanar_vujadinovic/anhuZ7SAj3hF/443.m3u8
-#EXTINF:-1,ZIGGO SPORT SELECT
-http://g-med.xyz:25461/live/aleksanar_vujadinovic/anhuZ7SAj3hF/15592.m3u8
+#EXTINF:-1,Ziggo Sport 1 ¹⁰⁸⁰ᵖ
+http://lemon.catchmeifyo.com:8000/9301834947/1675514161/16307
+#EXTINF:-1,Ziggo Sport 2 ¹⁰⁸⁰ᵖ
+http://lemon.catchmeifyo.com:8000/9301834947/1675514161/16335
+#EXTINF:-1,Ziggo Sport 3  ¹⁰⁸⁰ᵖ
+http://lemon.catchmeifyo.com:8000/9301834947/1675514161/16336
+#EXTINF:-1,Ziggo Sport 4 ¹⁰⁸⁰ᵖ
+http://lemon.catchmeifyo.com:8000/9301834947/1675514161/16333
+#EXTINF:-1,Ziggo Sport 5 ¹⁰⁸⁰ᵖ
+http://lemon.catchmeifyo.com:8000/9301834947/1675514161/16276
+#EXTINF:-1,Ziggo Sport 6 ¹⁰⁸⁰ᵖ
+http://lemon.catchmeifyo.com:8000/9301834947/1675514161/16277
+#EXTINF:-1,Ziggo Sport Extra ¹⁰⁸⁰ᵖ
+http://lemon.catchmeifyo.com:8000/9301834947/1675514161/187241
 #EXTINF:-1,TRING SPORT 1 HD
 http://g-med.xyz:25461/live/aleksanar_vujadinovic/anhuZ7SAj3hF/474.ts
 #EXTINF:-1,TRING SPORT 2 HD
