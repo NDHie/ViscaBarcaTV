@@ -5,10 +5,11 @@ https://rawtv.iddns.workers.dev/stream/EPL01.m2ts
 https://rawtv.iddns.workers.dev/stream/EPL02.m2ts
 #EXTINF:-1,Formula 1 01
 https://rawtv.iddns.workers.dev/stream/F101.m2ts
+#EXTINF:-1,NFL Super Bowl 01
+#https://rawtv.iddns.workers.dev/stream/NFL01.m2ts
 #EXTINF:-1,Sports Events 01
 https://rawtv.iddns.workers.dev/stream/EVENT01.m2ts
 #EXTINF:-1,Sports Events 02
 https://rawtv.iddns.workers.dev/stream/EVENT02.m2ts
 #EXTINF:-1,Sports Events 03
 https://rawtv.iddns.workers.dev/stream/EVENT03.m2ts
-https://rebrand.ly/iddnspl
