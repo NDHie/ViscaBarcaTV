@@ -16,4 +16,4 @@ Copyright owners can submit DMCA notifications for infringing content, and we wi
 
 To report copyright infringement, please email us with proof of ownership and the specific URLs of the content in question.
 
-zulei.k.a.deneke@gmail.com
+vu.phu.on.g.tr.ang.8.6.0.5@gmail.com
