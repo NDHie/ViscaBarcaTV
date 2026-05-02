@@ -3,41 +3,61 @@ const { addonBuilder, serveHTTP } = require("stremio-addon-sdk");
 // Cấu hình Manifest cho Add-on
 const manifest = {
     id: "org.viscabarca.m3u",
-    version: "1.0.1",
+    version: "1.0.2", // Nâng phiên bản lên 1.0.2
     name: "Visca Barca - Live",
-    description: "Trực tiếp bóng đá (Nguồn M3U)",
+    description: "Trực tiếp bóng đá và IPTV Thể thao",
     resources: ["catalog", "meta", "stream"],
     types: ["tv"],
-    idPrefixes: ["vb_"],
+    // Khai báo tiền tố ID cho từng nguồn để Stremio dễ phân biệt
+    idPrefixes: ["vb_live_", "vb_iptv_"], 
     catalogs: [
         {
             type: "tv",
             id: "vb_live_catalog",
-            name: "🔴 Trực tiếp & Kênh"
+            name: "🔴 Trực Tiếp" // Đã đổi tên theo ý bạn
+        },
+        {
+            type: "tv",
+            id: "vb_iptv_catalog",
+            name: "⚽ IPTV Sport" // Thêm danh mục mới
         }
     ]
 };
 
 const builder = new addonBuilder(manifest);
 
-// Biến lưu trữ cache để không phải tải lại file m3u liên tục
-let cachedChannels = [];
-let lastFetchTime = 0;
+// --- CẤU HÌNH CÁC NGUỒN M3U ---
+const SOURCES = {
+    live: {
+        url: "https://raw.githubusercontent.com/t23-02/bongda/refs/heads/main/bongda.m3u",
+        prefix: "vb_live_"
+    },
+    iptv: {
+        url: "https://raw.githubusercontent.com/vuminhthanh12/vuminhthanh12/refs/heads/main/vmttv",
+        prefix: "vb_iptv_"
+    }
+};
+
+// Biến lưu trữ cache riêng cho từng nguồn
+const caches = {
+    live: { data: [], time: 0 },
+    iptv: { data: [], time: 0 }
+};
 const CACHE_DURATION = 10 * 60 * 1000; // Cache 10 phút
 
-// --- HÀM PHỤ TRỢ: Tải và Đọc file M3U ---
-async function fetchAndParseM3U() {
-    // Nếu dữ liệu mới tải gần đây thì dùng luôn cache cho nhanh
-    if (Date.now() - lastFetchTime < CACHE_DURATION && cachedChannels.length > 0) {
-        return cachedChannels;
+// --- HÀM PHỤ TRỢ: Tải và Đọc file M3U tự động ---
+async function getPlaylist(sourceKey) {
+    const source = SOURCES[sourceKey];
+    
+    // Nếu dữ liệu mới tải gần đây thì dùng luôn cache
+    if (Date.now() - caches[sourceKey].time < CACHE_DURATION && caches[sourceKey].data.length > 0) {
+        return caches[sourceKey].data;
     }
 
     try {
-        const url = "https://raw.githubusercontent.com/t23-02/bongda/refs/heads/main/bongda.m3u";
-        const res = await fetch(url);
+        const res = await fetch(source.url);
         const text = await res.text();
         
-        // Cắt text thành từng dòng để phân tích
         const lines = text.split(/\r?\n/);
         const channels = [];
         let currentChannel = {};
@@ -47,7 +67,6 @@ async function fetchAndParseM3U() {
             line = line.trim();
             if (!line) continue;
 
-            // Đọc thông tin kênh (Tên, Logo, Nhóm)
             if (line.startsWith('#EXTINF:')) {
                 const logoMatch = line.match(/tvg-logo="([^"]*)"/);
                 if (logoMatch) currentChannel.logo = logoMatch[1];
@@ -55,7 +74,6 @@ async function fetchAndParseM3U() {
                 const groupMatch = line.match(/group-title="([^"]*)"/);
                 if (groupMatch) currentChannel.group = groupMatch[1];
 
-                // Tên kênh thường nằm sau dấu phẩy cuối cùng
                 const commaIndex = line.lastIndexOf(',');
                 if (commaIndex !== -1) {
                     currentChannel.name = line.substring(commaIndex + 1).trim();
@@ -63,51 +81,62 @@ async function fetchAndParseM3U() {
                     currentChannel.name = "Kênh không tên";
                 }
             } 
-            // Đọc link video
             else if (line.startsWith('http://') || line.startsWith('https://')) {
                 currentChannel.url = line;
-                currentChannel.id = `vb_ch_${index}`; // Tạo ID duy nhất cho kênh
+                // Tạo ID ghép từ tiền tố của nguồn và số thứ tự
+                currentChannel.id = `${source.prefix}${index}`; 
                 
                 channels.push(currentChannel);
-                currentChannel = {}; // Reset để đọc kênh tiếp theo
+                currentChannel = {}; 
                 index++;
             }
         }
 
-        cachedChannels = channels;
-        lastFetchTime = Date.now();
+        caches[sourceKey].data = channels;
+        caches[sourceKey].time = Date.now();
         return channels;
 
     } catch (e) {
-        console.error("Lỗi đọc file M3U:", e);
-        return cachedChannels; // Lỗi thì trả về dữ liệu cũ
+        console.error(`Lỗi đọc file M3U [${sourceKey}]:`, e);
+        return caches[sourceKey].data; 
     }
 }
 
-// --- 1. CATALOG HANDLER (Hiện danh sách kênh) ---
+// --- 1. CATALOG HANDLER (Hiện danh sách 2 nhóm kênh) ---
 builder.defineCatalogHandler(async ({ type, id }) => {
-    if (type === "tv" && id === "vb_live_catalog") {
-        const channels = await fetchAndParseM3U();
-        let metas = channels.map(ch => ({
-            id: ch.id,
-            type: "tv",
-            name: ch.name || "Kênh Thể Thao",
-            description: ch.group ? `Nhóm: ${ch.group}` : "Trực tiếp bóng đá",
-            poster: ch.logo || "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/FC_Barcelona_%28crest%29.svg/1024px-FC_Barcelona_%28crest%29.svg.png",
-            posterShape: "square"
-        }));
-        
-        return { metas: metas };
+    let channels = [];
+    if (type === "tv") {
+        if (id === "vb_live_catalog") {
+            channels = await getPlaylist('live');
+        } else if (id === "vb_iptv_catalog") {
+            channels = await getPlaylist('iptv');
+        }
     }
-    return { metas: [] };
+    
+    let metas = channels.map(ch => ({
+        id: ch.id,
+        type: "tv",
+        name: ch.name || "Kênh Thể Thao",
+        description: ch.group ? `Nhóm: ${ch.group}` : "Trực tiếp",
+        poster: ch.logo || "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/FC_Barcelona_%28crest%29.svg/1024px-FC_Barcelona_%28crest%29.svg.png",
+        posterShape: "square"
+    }));
+    
+    return { metas: metas };
 });
 
 // --- 2. META HANDLER (Chi tiết kênh) ---
 builder.defineMetaHandler(async ({ type, id }) => {
-    if (type === "tv" && id.startsWith("vb_")) {
-        const channels = await fetchAndParseM3U();
+    if (type === "tv") {
+        let channels = [];
+        // Xác định xem ID kênh này thuộc nguồn nào để lấy đúng danh sách
+        if (id.startsWith(SOURCES.live.prefix)) {
+            channels = await getPlaylist('live');
+        } else if (id.startsWith(SOURCES.iptv.prefix)) {
+            channels = await getPlaylist('iptv');
+        }
+
         const ch = channels.find(c => c.id === id);
-        
         if (ch) {
             return {
                 meta: {
@@ -127,10 +156,15 @@ builder.defineMetaHandler(async ({ type, id }) => {
 
 // --- 3. STREAM HANDLER (Phát Video) ---
 builder.defineStreamHandler(async ({ type, id }) => {
-    if (type === "tv" && id.startsWith("vb_")) {
-        const channels = await fetchAndParseM3U();
+    if (type === "tv") {
+        let channels = [];
+        if (id.startsWith(SOURCES.live.prefix)) {
+            channels = await getPlaylist('live');
+        } else if (id.startsWith(SOURCES.iptv.prefix)) {
+            channels = await getPlaylist('iptv');
+        }
+
         const ch = channels.find(c => c.id === id);
-        
         if (ch && ch.url) {
             return {
                 streams: [
@@ -146,5 +180,4 @@ builder.defineStreamHandler(async ({ type, id }) => {
 });
 
 // --- KHỞI CHẠY SERVER ---
-// Dùng port của Render cấp hoặc mặc định 7000
 serveHTTP(builder.getInterface(), { port: process.env.PORT || 7000 });
