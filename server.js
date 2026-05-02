@@ -5,7 +5,7 @@ const manifest = {
     id: "org.viscabarca.m3u",
     version: "1.0.2", // Nâng phiên bản lên 1.0.2
     name: "Visca Barca - Live",
-    description: "Trực tiếp bóng đá và IPTV Thể thao",
+    description: "Visca Barca TV",
     resources: ["catalog", "meta", "stream"],
     types: ["tv"],
     // Khai báo tiền tố ID cho từng nguồn để Stremio dễ phân biệt
