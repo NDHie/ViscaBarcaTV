@@ -1,31 +1,5 @@
 const { addonBuilder, serveHTTP } = require("stremio-addon-sdk");
 
-// Cấu hình Manifest cho Add-on
-const manifest = {
-    id: "org.viscabarca.m3u",
-    version: "1.0.2", // Nâng phiên bản lên 1.0.2
-    name: "Visca Barca - Live",
-    description: "Visca Barca TV",
-    resources: ["catalog", "meta", "stream"],
-    types: ["tv"],
-    // Khai báo tiền tố ID cho từng nguồn để Stremio dễ phân biệt
-    idPrefixes: ["vb_live_", "vb_iptv_"], 
-    catalogs: [
-        {
-            type: "tv",
-            id: "vb_live_catalog",
-            name: "🔴 Trực Tiếp" // Đã đổi tên theo ý bạn
-        },
-        {
-            type: "tv",
-            id: "vb_iptv_catalog",
-            name: "⚽ IPTV Sport" // Thêm danh mục mới
-        }
-    ]
-};
-
-const builder = new addonBuilder(manifest);
-
 // --- CẤU HÌNH CÁC NGUỒN M3U ---
 const SOURCES = {
     live: {
@@ -38,18 +12,17 @@ const SOURCES = {
     }
 };
 
-// Biến lưu trữ cache riêng cho từng nguồn
+// Biến lưu trữ cache
 const caches = {
     live: { data: [], time: 0 },
     iptv: { data: [], time: 0 }
 };
 const CACHE_DURATION = 10 * 60 * 1000; // Cache 10 phút
 
-// --- HÀM PHỤ TRỢ: Tải và Đọc file M3U tự động ---
+// --- HÀM PHỤ TRỢ: Tải và Đọc file M3U ---
 async function getPlaylist(sourceKey) {
     const source = SOURCES[sourceKey];
     
-    // Nếu dữ liệu mới tải gần đây thì dùng luôn cache
     if (Date.now() - caches[sourceKey].time < CACHE_DURATION && caches[sourceKey].data.length > 0) {
         return caches[sourceKey].data;
     }
@@ -83,7 +56,6 @@ async function getPlaylist(sourceKey) {
             } 
             else if (line.startsWith('http://') || line.startsWith('https://')) {
                 currentChannel.url = line;
-                // Tạo ID ghép từ tiền tố của nguồn và số thứ tự
                 currentChannel.id = `${source.prefix}${index}`; 
                 
                 channels.push(currentChannel);
@@ -102,82 +74,121 @@ async function getPlaylist(sourceKey) {
     }
 }
 
-// --- 1. CATALOG HANDLER (Hiện danh sách 2 nhóm kênh) ---
-builder.defineCatalogHandler(async ({ type, id }) => {
-    let channels = [];
-    if (type === "tv") {
-        if (id === "vb_live_catalog") {
-            channels = await getPlaylist('live');
-        } else if (id === "vb_iptv_catalog") {
-            channels = await getPlaylist('iptv');
-        }
-    }
-    
-    let metas = channels.map(ch => ({
-        id: ch.id,
-        type: "tv",
-        name: ch.name || "Kênh Thể Thao",
-        description: ch.group ? `Nhóm: ${ch.group}` : "Trực tiếp",
-        poster: ch.logo || "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/FC_Barcelona_%28crest%29.svg/1024px-FC_Barcelona_%28crest%29.svg.png",
-        posterShape: "square"
-    }));
-    
-    return { metas: metas };
-});
+// --- HÀM KHỞI TẠO ADD-ON (Đọc nhóm trước khi chạy) ---
+async function initAddon() {
+    // 1. Tải trước dữ liệu để lấy danh sách Nhóm (Groups)
+    const liveData = await getPlaylist('live');
+    const iptvData = await getPlaylist('iptv');
 
-// --- 2. META HANDLER (Chi tiết kênh) ---
-builder.defineMetaHandler(async ({ type, id }) => {
-    if (type === "tv") {
-        let channels = [];
-        // Xác định xem ID kênh này thuộc nguồn nào để lấy đúng danh sách
-        if (id.startsWith(SOURCES.live.prefix)) {
-            channels = await getPlaylist('live');
-        } else if (id.startsWith(SOURCES.iptv.prefix)) {
-            channels = await getPlaylist('iptv');
-        }
+    // Lọc ra các nhóm không bị trùng lặp
+    const liveGroups = [...new Set(liveData.map(c => c.group).filter(Boolean))];
+    const iptvGroups = [...new Set(iptvData.map(c => c.group).filter(Boolean))];
 
-        const ch = channels.find(c => c.id === id);
-        if (ch) {
-            return {
-                meta: {
-                    id: ch.id,
-                    type: "tv",
-                    name: ch.name || "Kênh Thể Thao",
-                    description: ch.group ? `Bạn đang xem kênh ${ch.name} thuộc nhóm ${ch.group}.` : "Nhấn vào luồng phát bên phải để xem.",
-                    poster: ch.logo || "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/FC_Barcelona_%28crest%29.svg/1024px-FC_Barcelona_%28crest%29.svg.png",
-                    posterShape: "square",
-                    background: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=1935&auto=format&fit=crop"
-                }
-            };
-        }
-    }
-    return { meta: null };
-});
-
-// --- 3. STREAM HANDLER (Phát Video) ---
-builder.defineStreamHandler(async ({ type, id }) => {
-    if (type === "tv") {
-        let channels = [];
-        if (id.startsWith(SOURCES.live.prefix)) {
-            channels = await getPlaylist('live');
-        } else if (id.startsWith(SOURCES.iptv.prefix)) {
-            channels = await getPlaylist('iptv');
-        }
-
-        const ch = channels.find(c => c.id === id);
-        if (ch && ch.url) {
-            return {
-                streams: [
-                    {
-                        title: `▶ Phát ngay\nChất lượng tự động`,
-                        url: ch.url
-                    }
+    // 2. Cấu hình Manifest với Bộ Lọc (Extra Genre)
+    const manifest = {
+        id: "org.viscabarca.m3u",
+        version: "1.0.3",
+        name: "Visca Barca TV", // Giữ nguyên tên bạn đã đổi
+        description: "Trực tiếp bóng đá và IPTV Thể thao",
+        resources: ["catalog", "meta", "stream"],
+        types: ["tv"],
+        idPrefixes: ["vb_live_", "vb_iptv_"], 
+        catalogs: [
+            {
+                type: "tv",
+                id: "vb_live_catalog",
+                name: "🔴 Trực Tiếp",
+                extra: [
+                    // Khai báo bộ lọc cho Stremio
+                    { name: "genre", isRequired: false, options: liveGroups }
                 ]
-            };
-        }
-    }
-    return { streams: [] };
-});
+            },
+            {
+                type: "tv",
+                id: "vb_iptv_catalog",
+                name: "⚽ IPTV Sport",
+                extra: [
+                    { name: "genre", isRequired: false, options: iptvGroups }
+                ]
+            }
+        ]
+    };
 
-// --- KHỞI CHẠY SERVER ---
-serveHTTP(builder.getInterface(), { port: process.env.PORT || 7000 });
+    const builder = new addonBuilder(manifest);
+
+    // --- 3. CATALOG HANDLER (Có xử lý bộ lọc) ---
+    builder.defineCatalogHandler(async ({ type, id, extra }) => {
+        let channels = [];
+        if (type === "tv") {
+            if (id === "vb_live_catalog") {
+                channels = await getPlaylist('live');
+            } else if (id === "vb_iptv_catalog") {
+                channels = await getPlaylist('iptv');
+            }
+            
+            // Xử lý Lọc theo Nhóm (Genre)
+            if (extra && extra.genre) {
+                channels = channels.filter(ch => ch.group === extra.genre);
+            }
+        }
+        
+        let metas = channels.map(ch => ({
+            id: ch.id,
+            type: "tv",
+            name: ch.name || "Kênh Thể Thao",
+            description: ch.group ? `Nhóm: ${ch.group}` : "Trực tiếp",
+            poster: ch.logo || "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/FC_Barcelona_%28crest%29.svg/1024px-FC_Barcelona_%28crest%29.svg.png",
+            posterShape: "square"
+        }));
+        
+        return { metas: metas };
+    });
+
+    // --- 4. META HANDLER ---
+    builder.defineMetaHandler(async ({ type, id }) => {
+        if (type === "tv") {
+            let channels = [];
+            if (id.startsWith(SOURCES.live.prefix)) channels = await getPlaylist('live');
+            else if (id.startsWith(SOURCES.iptv.prefix)) channels = await getPlaylist('iptv');
+
+            const ch = channels.find(c => c.id === id);
+            if (ch) {
+                return {
+                    meta: {
+                        id: ch.id,
+                        type: "tv",
+                        name: ch.name || "Kênh Thể Thao",
+                        description: ch.group ? `Bạn đang xem kênh ${ch.name} thuộc nhóm ${ch.group}.` : "Nhấn vào luồng phát bên phải để xem.",
+                        poster: ch.logo || "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/FC_Barcelona_%28crest%29.svg/1024px-FC_Barcelona_%28crest%29.svg.png",
+                        posterShape: "square",
+                        background: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=1935&auto=format&fit=crop"
+                    }
+                };
+            }
+        }
+        return { meta: null };
+    });
+
+    // --- 5. STREAM HANDLER ---
+    builder.defineStreamHandler(async ({ type, id }) => {
+        if (type === "tv") {
+            let channels = [];
+            if (id.startsWith(SOURCES.live.prefix)) channels = await getPlaylist('live');
+            else if (id.startsWith(SOURCES.iptv.prefix)) channels = await getPlaylist('iptv');
+
+            const ch = channels.find(c => c.id === id);
+            if (ch && ch.url) {
+                return {
+                    streams: [{ title: `▶ Phát ngay\nChất lượng tự động`, url: ch.url }]
+                };
+            }
+        }
+        return { streams: [] };
+    });
+
+    // --- KHỞI CHẠY SERVER ---
+    serveHTTP(builder.getInterface(), { port: process.env.PORT || 7000 });
+}
+
+// Chạy hàm khởi tạo
+initAddon();
