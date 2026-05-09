@@ -9,18 +9,13 @@ const SOURCES = {
     iptv: {
         url: "https://raw.githubusercontent.com/vuminhthanh12/vuminhthanh12/refs/heads/main/vmttv",
         prefix: "vb_iptv_"
-    },
-    dlhd: {
-        url: "https://raw.githubusercontent.com/smokindope/easyproxurls/refs/heads/main/dlhd.m3u", // <--- XOÁ DÒNG CHỮ NÀY VÀ DÁN LINK CỦA BẠN VÀO
-        prefix: "vb_dlhd_"
     }
 };
 
 // Biến lưu trữ cache
 const caches = {
     live: { data: [], time: 0 },
-    iptv: { data: [], time: 0 },
-    dlhd: { data: [], time: 0 }
+    iptv: { data: [], time: 0 }
 };
 const CACHE_DURATION = 10 * 60 * 1000; // Cache 10 phút
 
@@ -79,52 +74,59 @@ async function getPlaylist(sourceKey) {
     }
 }
 
-// --- HÀM KHỞI TẠO ADD-ON ---
+// --- HÀM KHỞI TẠO ADD-ON (Đọc nhóm trước khi chạy) ---
 async function initAddon() {
-    // 1. Tải dữ liệu để lấy danh sách Nhóm
+    // 1. Tải trước dữ liệu để lấy danh sách Nhóm (Groups)
     const liveData = await getPlaylist('live');
     const iptvData = await getPlaylist('iptv');
-    const dlhdData = await getPlaylist('dlhd');
 
+    // Lọc ra các nhóm không bị trùng lặp
     const liveGroups = [...new Set(liveData.map(c => c.group).filter(Boolean))];
     const iptvGroups = [...new Set(iptvData.map(c => c.group).filter(Boolean))];
-    const dlhdGroups = [...new Set(dlhdData.map(c => c.group).filter(Boolean))];
 
-    // 2. Cấu hình Manifest
+    // 2. Cấu hình Manifest với Bộ Lọc (Extra Genre)
     const manifest = {
         id: "org.viscabarca.m3u",
-        version: "1.0.4",
-        name: "Visca Barca TV",
-        description: "Trực tiếp bóng đá, IPTV và DLHD",
+        version: "1.0.3",
+        name: "Visca Barca TV", // Giữ nguyên tên bạn đã đổi
+        description: "Trực tiếp bóng đá và IPTV Thể thao",
         resources: ["catalog", "meta", "stream"],
         types: ["tv"],
-        idPrefixes: ["vb_live_", "vb_iptv_", "vb_dlhd_"], 
+        idPrefixes: ["vb_live_", "vb_iptv_"], 
         catalogs: [
             {
-                type: "tv", id: "vb_live_catalog", name: "🔴 Trực Tiếp",
-                extra: [{ name: "genre", isRequired: false, options: liveGroups }]
+                type: "tv",
+                id: "vb_live_catalog",
+                name: "🔴 Trực Tiếp",
+                extra: [
+                    // Khai báo bộ lọc cho Stremio
+                    { name: "genre", isRequired: false, options: liveGroups }
+                ]
             },
             {
-                type: "tv", id: "vb_iptv_catalog", name: "⚽ IPTV Sport",
-                extra: [{ name: "genre", isRequired: false, options: iptvGroups }]
-            },
-            {
-                type: "tv", id: "vb_dlhd_catalog", name: "📺 DLHD",
-                extra: [{ name: "genre", isRequired: false, options: dlhdGroups }]
+                type: "tv",
+                id: "vb_iptv_catalog",
+                name: "⚽ IPTV Sport",
+                extra: [
+                    { name: "genre", isRequired: false, options: iptvGroups }
+                ]
             }
         ]
     };
 
     const builder = new addonBuilder(manifest);
 
-    // --- 3. CATALOG HANDLER ---
+    // --- 3. CATALOG HANDLER (Có xử lý bộ lọc) ---
     builder.defineCatalogHandler(async ({ type, id, extra }) => {
         let channels = [];
         if (type === "tv") {
-            if (id === "vb_live_catalog") channels = await getPlaylist('live');
-            else if (id === "vb_iptv_catalog") channels = await getPlaylist('iptv');
-            else if (id === "vb_dlhd_catalog") channels = await getPlaylist('dlhd');
+            if (id === "vb_live_catalog") {
+                channels = await getPlaylist('live');
+            } else if (id === "vb_iptv_catalog") {
+                channels = await getPlaylist('iptv');
+            }
             
+            // Xử lý Lọc theo Nhóm (Genre)
             if (extra && extra.genre) {
                 channels = channels.filter(ch => ch.group === extra.genre);
             }
@@ -148,7 +150,6 @@ async function initAddon() {
             let channels = [];
             if (id.startsWith(SOURCES.live.prefix)) channels = await getPlaylist('live');
             else if (id.startsWith(SOURCES.iptv.prefix)) channels = await getPlaylist('iptv');
-            else if (id.startsWith(SOURCES.dlhd.prefix)) channels = await getPlaylist('dlhd');
 
             const ch = channels.find(c => c.id === id);
             if (ch) {
@@ -174,7 +175,6 @@ async function initAddon() {
             let channels = [];
             if (id.startsWith(SOURCES.live.prefix)) channels = await getPlaylist('live');
             else if (id.startsWith(SOURCES.iptv.prefix)) channels = await getPlaylist('iptv');
-            else if (id.startsWith(SOURCES.dlhd.prefix)) channels = await getPlaylist('dlhd');
 
             const ch = channels.find(c => c.id === id);
             if (ch && ch.url) {
@@ -186,7 +186,9 @@ async function initAddon() {
         return { streams: [] };
     });
 
+    // --- KHỞI CHẠY SERVER ---
     serveHTTP(builder.getInterface(), { port: process.env.PORT || 7000 });
 }
 
+// Chạy hàm khởi tạo
 initAddon();
