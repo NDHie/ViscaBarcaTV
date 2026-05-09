@@ -11,7 +11,7 @@ const SOURCES = {
         prefix: "vb_iptv_"
     },
     dlhd: {
-        url: "https://raw.githubusercontent.com/arquerido/mych/refs/heads/main/dlhd.m3u", // <--- XOÁ DÒNG CHỮ NÀY VÀ DÁN LINK CỦA BẠN VÀO
+        url: "https://raw.githubusercontent.com/smokindope/easyproxurls/refs/heads/main/dlhd.m3u", // <--- XOÁ DÒNG CHỮ NÀY VÀ DÁN LINK CỦA BẠN VÀO
         prefix: "vb_dlhd_"
     }
 };
