@@ -9,17 +9,21 @@ const SOURCES = {
     iptv: {
         url: "https://raw.githubusercontent.com/vuminhthanh12/vuminhthanh12/refs/heads/main/vmttv",
         prefix: "vb_iptv_"
+    },
+    dlhd: {
+        url: "https://raw.githubusercontent.com/NDHie/ViscaBarcaTV/refs/heads/main/sample.m3u", // Link mới của bạn
+        prefix: "vb_dlhd_"
     }
 };
 
-// Biến lưu trữ cache
 const caches = {
     live: { data: [], time: 0 },
-    iptv: { data: [], time: 0 }
+    iptv: { data: [], time: 0 },
+    dlhd: { data: [], time: 0 }
 };
-const CACHE_DURATION = 10 * 60 * 1000; // Cache 10 phút
+const CACHE_DURATION = 10 * 60 * 1000;
 
-// --- HÀM PHỤ TRỢ: Tải và Đọc file M3U ---
+// --- HÀM TẢI VÀ ĐỌC M3U (SIÊU CẤP) ---
 async function getPlaylist(sourceKey) {
     const source = SOURCES[sourceKey];
     
@@ -29,8 +33,9 @@ async function getPlaylist(sourceKey) {
 
     try {
         const res = await fetch(source.url);
+        if (!res.ok) return caches[sourceKey].data;
+
         const text = await res.text();
-        
         const lines = text.split(/\r?\n/);
         const channels = [];
         let currentChannel = {};
@@ -41,22 +46,44 @@ async function getPlaylist(sourceKey) {
             if (!line) continue;
 
             if (line.startsWith('#EXTINF:')) {
-                const logoMatch = line.match(/tvg-logo="([^"]*)"/);
+                const logoMatch = line.match(/tvg-logo="([^"]+)"/) || line.match(/tvg-logo=([^ ,]+)/);
                 if (logoMatch) currentChannel.logo = logoMatch[1];
 
-                const groupMatch = line.match(/group-title="([^"]*)"/);
+                const groupMatch = line.match(/group-title="([^"]+)"/) ||
+                                   line.match(/group-title=([^ ,]+)/) ||
+                                   line.match(/tvg-group="([^"]+)"/) ||
+                                   line.match(/tvg-group=([^ ,]+)/);
                 if (groupMatch) currentChannel.group = groupMatch[1];
 
                 const commaIndex = line.lastIndexOf(',');
                 if (commaIndex !== -1) {
                     currentChannel.name = line.substring(commaIndex + 1).trim();
                 } else {
-                    currentChannel.name = "Kênh không tên";
+                    currentChannel.name = `Kênh ${sourceKey.toUpperCase()} ${index}`;
                 }
             } 
-            else if (line.startsWith('http://') || line.startsWith('https://')) {
-                currentChannel.url = line;
-                currentChannel.id = `${source.prefix}${index}`; 
+            else if (line.startsWith('#EXTGRP:')) {
+                currentChannel.group = line.substring(8).trim();
+            }
+            else if (line.startsWith('http') || line.startsWith('acestream://') || line.startsWith('rtmp://')) {
+                let url = line;
+                let reqHeaders = {};
+
+                if (url.includes('|')) {
+                    const parts = url.split('|');
+                    url = parts[0]; 
+                    const options = parts[1].split('&');
+                    options.forEach(opt => {
+                        if(opt.startsWith('User-Agent=')) reqHeaders['User-Agent'] = opt.substring(11);
+                        if(opt.startsWith('Referer=')) reqHeaders['Referer'] = opt.substring(8);
+                    });
+                }
+
+                currentChannel.url = url;
+                currentChannel.id = `${source.prefix}${index}`;
+                currentChannel.headers = reqHeaders;
+                
+                if (!currentChannel.group) currentChannel.group = "Khác";
                 
                 channels.push(currentChannel);
                 currentChannel = {}; 
@@ -74,91 +101,69 @@ async function getPlaylist(sourceKey) {
     }
 }
 
-// --- HÀM KHỞI TẠO ADD-ON (Đọc nhóm trước khi chạy) ---
+// --- HÀM KHỞI TẠO ADD-ON ---
 async function initAddon() {
-    // 1. Tải trước dữ liệu để lấy danh sách Nhóm (Groups)
     const liveData = await getPlaylist('live');
     const iptvData = await getPlaylist('iptv');
+    const dlhdData = await getPlaylist('dlhd');
 
-    // Lọc ra các nhóm không bị trùng lặp
-    const liveGroups = [...new Set(liveData.map(c => c.group).filter(Boolean))];
-    const iptvGroups = [...new Set(iptvData.map(c => c.group).filter(Boolean))];
+    const liveGroups = [...new Set(liveData.map(c => c.group))];
+    const iptvGroups = [...new Set(iptvData.map(c => c.group))];
+    const dlhdGroups = [...new Set(dlhdData.map(c => c.group))];
 
-    // 2. Cấu hình Manifest với Bộ Lọc (Extra Genre)
     const manifest = {
         id: "org.viscabarca.m3u",
-        version: "1.0.3",
-        name: "Visca Barca TV", // Giữ nguyên tên bạn đã đổi
-        description: "Trực tiếp bóng đá và IPTV Thể thao",
+        version: "1.0.6", // Đổi version lên 1.0.6
+        name: "Visca Barca TV",
+        description: "Trực tiếp bóng đá, IPTV và DLHD",
         resources: ["catalog", "meta", "stream"],
         types: ["tv"],
-        idPrefixes: ["vb_live_", "vb_iptv_"], 
+        idPrefixes: ["vb_live_", "vb_iptv_", "vb_dlhd_"], 
         catalogs: [
-            {
-                type: "tv",
-                id: "vb_live_catalog",
-                name: "🔴 Trực Tiếp",
-                extra: [
-                    // Khai báo bộ lọc cho Stremio
-                    { name: "genre", isRequired: false, options: liveGroups }
-                ]
-            },
-            {
-                type: "tv",
-                id: "vb_iptv_catalog",
-                name: "⚽ IPTV Sport",
-                extra: [
-                    { name: "genre", isRequired: false, options: iptvGroups }
-                ]
-            }
+            { type: "tv", id: "vb_live_catalog", name: "🔴 Trực Tiếp", extra: [{ name: "genre", isRequired: false, options: liveGroups }] },
+            { type: "tv", id: "vb_iptv_catalog", name: "⚽ IPTV Sport", extra: [{ name: "genre", isRequired: false, options: iptvGroups }] },
+            { type: "tv", id: "vb_dlhd_catalog", name: "📺 Link RAW", extra: [{ name: "genre", isRequired: false, options: dlhdGroups }] }
         ]
     };
 
     const builder = new addonBuilder(manifest);
 
-    // --- 3. CATALOG HANDLER (Có xử lý bộ lọc) ---
     builder.defineCatalogHandler(async ({ type, id, extra }) => {
         let channels = [];
         if (type === "tv") {
-            if (id === "vb_live_catalog") {
-                channels = await getPlaylist('live');
-            } else if (id === "vb_iptv_catalog") {
-                channels = await getPlaylist('iptv');
-            }
+            if (id === "vb_live_catalog") channels = await getPlaylist('live');
+            else if (id === "vb_iptv_catalog") channels = await getPlaylist('iptv');
+            else if (id === "vb_dlhd_catalog") channels = await getPlaylist('dlhd');
             
-            // Xử lý Lọc theo Nhóm (Genre)
             if (extra && extra.genre) {
                 channels = channels.filter(ch => ch.group === extra.genre);
             }
         }
         
         let metas = channels.map(ch => ({
-            id: ch.id,
-            type: "tv",
-            name: ch.name || "Kênh Thể Thao",
-            description: ch.group ? `Nhóm: ${ch.group}` : "Trực tiếp",
+            id: ch.id, type: "tv",
+            name: ch.name,
+            description: `Nhóm: ${ch.group}`,
             poster: ch.logo || "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/FC_Barcelona_%28crest%29.svg/1024px-FC_Barcelona_%28crest%29.svg.png",
             posterShape: "square"
         }));
-        
         return { metas: metas };
     });
 
-    // --- 4. META HANDLER ---
     builder.defineMetaHandler(async ({ type, id }) => {
         if (type === "tv") {
             let channels = [];
             if (id.startsWith(SOURCES.live.prefix)) channels = await getPlaylist('live');
             else if (id.startsWith(SOURCES.iptv.prefix)) channels = await getPlaylist('iptv');
+            else if (id.startsWith(SOURCES.dlhd.prefix)) channels = await getPlaylist('dlhd');
 
             const ch = channels.find(c => c.id === id);
             if (ch) {
                 return {
                     meta: {
-                        id: ch.id,
-                        type: "tv",
-                        name: ch.name || "Kênh Thể Thao",
-                        description: ch.group ? `Bạn đang xem kênh ${ch.name} thuộc nhóm ${ch.group}.` : "Nhấn vào luồng phát bên phải để xem.",
+                        id: ch.id, type: "tv",
+                        name: ch.name,
+                        description: `Kênh ${ch.name} thuộc nhóm ${ch.group}.`,
                         poster: ch.logo || "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/FC_Barcelona_%28crest%29.svg/1024px-FC_Barcelona_%28crest%29.svg.png",
                         posterShape: "square",
                         background: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=1935&auto=format&fit=crop"
@@ -169,26 +174,47 @@ async function initAddon() {
         return { meta: null };
     });
 
-    // --- 5. STREAM HANDLER ---
     builder.defineStreamHandler(async ({ type, id }) => {
         if (type === "tv") {
             let channels = [];
+            // Xác định xem kênh thuộc nhóm nào
+            let isWebLink = false;
+
             if (id.startsWith(SOURCES.live.prefix)) channels = await getPlaylist('live');
             else if (id.startsWith(SOURCES.iptv.prefix)) channels = await getPlaylist('iptv');
+            else if (id.startsWith(SOURCES.dlhd.prefix)) {
+                channels = await getPlaylist('dlhd');
+                isWebLink = true; // Đánh dấu đây là link web
+            }
 
             const ch = channels.find(c => c.id === id);
             if (ch && ch.url) {
-                return {
-                    streams: [{ title: `▶ Phát ngay\nChất lượng tự động`, url: ch.url }]
-                };
+                // Nếu là DLHD (Link trang web)
+                if (isWebLink) {
+                    return {
+                        streams: [{ 
+                            title: `🌐 Mở bằng Trình duyệt\nNguồn: DLHD (Web)`, 
+                            externalUrl: ch.url // Lệnh mở qua Chrome/Safari
+                        }]
+                    };
+                } 
+                // Nếu là luồng m3u8 tiêu chuẩn
+                else {
+                    let streamObj = { title: `▶ Phát ngay\nChất lượng tự động`, url: ch.url };
+                    if (ch.headers && Object.keys(ch.headers).length > 0) {
+                        streamObj.behaviorHints = {
+                            notWebReady: true,
+                            proxyHeaders: { request: ch.headers }
+                        };
+                    }
+                    return { streams: [streamObj] };
+                }
             }
         }
         return { streams: [] };
     });
 
-    // --- KHỞI CHẠY SERVER ---
     serveHTTP(builder.getInterface(), { port: process.env.PORT || 7000 });
 }
 
-// Chạy hàm khởi tạo
 initAddon();
