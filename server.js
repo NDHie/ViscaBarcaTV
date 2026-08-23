@@ -3,7 +3,7 @@ const { addonBuilder, serveHTTP } = require("stremio-addon-sdk");
 // --- CẤU HÌNH CÁC NGUỒN M3U ---
 const SOURCES = {
     live: {
-        url: "https://raw.githubusercontent.com/t23-02/bongda/refs/heads/main/bongda.m3u",
+        url: "https://tinyurl.com/ttthethao2",
         prefix: "vb_live_"
     },
     iptv: {
