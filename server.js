@@ -11,20 +11,19 @@ const SOURCES = {
         prefix: "vb_iptv_"
     },
     dlhd: {
-        url: "https://raw.githubusercontent.com/NDHie/ViscaBarcaTV/refs/heads/main/sample.m3u", // <--- XOÁ DÒNG CHỮ NÀY VÀ DÁN LINK CỦA BẠN VÀO
+        url: "https://raw.githubusercontent.com/NDHie/ViscaBarcaTV/refs/heads/main/sample.m3u",
         prefix: "vb_dlhd_"
     }
 };
 
-// Biến lưu trữ cache
 const caches = {
     live: { data: [], time: 0 },
     iptv: { data: [], time: 0 },
     dlhd: { data: [], time: 0 }
 };
-const CACHE_DURATION = 10 * 60 * 1000; // Cache 10 phút
+const CACHE_DURATION = 10 * 60 * 1000;
 
-// --- HÀM PHỤ TRỢ: Tải và Đọc file M3U ---
+// --- HÀM ĐỌC M3U (Nâng cấp nhận diện mọi loại nhóm) ---
 async function getPlaylist(sourceKey) {
     const source = SOURCES[sourceKey];
     
@@ -46,23 +45,34 @@ async function getPlaylist(sourceKey) {
             if (!line) continue;
 
             if (line.startsWith('#EXTINF:')) {
-                const logoMatch = line.match(/tvg-logo="([^"]*)"/);
+                const logoMatch = line.match(/tvg-logo="([^"]+)"/) || line.match(/tvg-logo=([^ ,]+)/);
                 if (logoMatch) currentChannel.logo = logoMatch[1];
 
-                const groupMatch = line.match(/group-title="([^"]*)"/);
+                // Quét thông minh: hỗ trợ group-title và tvg-group, có hoặc không có ngoặc kép
+                const groupMatch = line.match(/group-title="([^"]+)"/) ||
+                                   line.match(/group-title=([^ ,]+)/) ||
+                                   line.match(/tvg-group="([^"]+)"/) ||
+                                   line.match(/tvg-group=([^ ,]+)/);
                 if (groupMatch) currentChannel.group = groupMatch[1];
 
                 const commaIndex = line.lastIndexOf(',');
                 if (commaIndex !== -1) {
                     currentChannel.name = line.substring(commaIndex + 1).trim();
                 } else {
-                    currentChannel.name = "Kênh không tên";
+                    currentChannel.name = `Kênh ${index}`;
                 }
             } 
+            // Bắt trường hợp nhóm nằm ở dòng riêng #EXTGRP
+            else if (line.startsWith('#EXTGRP:')) {
+                currentChannel.group = line.substring(8).trim();
+            }
             else if (line.startsWith('http://') || line.startsWith('https://')) {
                 currentChannel.url = line;
                 currentChannel.id = `${source.prefix}${index}`; 
                 
+                // Nếu kênh không có nhóm, gom vào nhóm "Khác"
+                if (!currentChannel.group) currentChannel.group = "Khác";
+
                 channels.push(currentChannel);
                 currentChannel = {}; 
                 index++;
@@ -79,9 +89,7 @@ async function getPlaylist(sourceKey) {
     }
 }
 
-// --- HÀM KHỞI TẠO ADD-ON ---
 async function initAddon() {
-    // 1. Tải dữ liệu để lấy danh sách Nhóm
     const liveData = await getPlaylist('live');
     const iptvData = await getPlaylist('iptv');
     const dlhdData = await getPlaylist('dlhd');
@@ -90,10 +98,9 @@ async function initAddon() {
     const iptvGroups = [...new Set(iptvData.map(c => c.group).filter(Boolean))];
     const dlhdGroups = [...new Set(dlhdData.map(c => c.group).filter(Boolean))];
 
-    // 2. Cấu hình Manifest
     const manifest = {
         id: "org.viscabarca.m3u",
-        version: "1.0.4",
+        version: "1.0.7", // Đổi version để ép Stremio cập nhật
         name: "Visca Barca TV",
         description: "Trực tiếp bóng đá, IPTV và DLHD",
         resources: ["catalog", "meta", "stream"],
@@ -117,7 +124,6 @@ async function initAddon() {
 
     const builder = new addonBuilder(manifest);
 
-    // --- 3. CATALOG HANDLER ---
     builder.defineCatalogHandler(async ({ type, id, extra }) => {
         let channels = [];
         if (type === "tv") {
@@ -142,7 +148,6 @@ async function initAddon() {
         return { metas: metas };
     });
 
-    // --- 4. META HANDLER ---
     builder.defineMetaHandler(async ({ type, id }) => {
         if (type === "tv") {
             let channels = [];
@@ -168,7 +173,6 @@ async function initAddon() {
         return { meta: null };
     });
 
-    // --- 5. STREAM HANDLER ---
     builder.defineStreamHandler(async ({ type, id }) => {
         if (type === "tv") {
             let channels = [];
