@@ -1,6 +1,5 @@
 const { addonBuilder, serveHTTP } = require("stremio-addon-sdk");
 
-// --- CẤU HÌNH NGUỒN JSON DUY NHẤT ---
 const SOURCES = {
     xoilac: {
         url: "https://tinyurl.com/xoilacz3",
@@ -8,33 +7,40 @@ const SOURCES = {
     }
 };
 
-const caches = {
-    xoilac: { data: [], time: 0 }
-};
-const CACHE_DURATION = 10 * 60 * 1000;
+let cachedChannels = [];
+let cachedCatalogs = [];
+let lastFetch = 0;
+const CACHE_DURATION = 10 * 60 * 1000; // Làm mới dữ liệu 10 phút / lần
 
-// --- BỘ ĐỌC JSON CHUYÊN DỤNG ---
-async function getPlaylist() {
-    if (Date.now() - caches.xoilac.time < CACHE_DURATION && caches.xoilac.data.length > 0) {
-        return caches.xoilac.data;
+// --- BỘ ĐỌC JSON ĐA TẦNG (Tách Provider -> Catalog, Group -> Genre) ---
+async function loadData() {
+    if (Date.now() - lastFetch < CACHE_DURATION && cachedChannels.length > 0) {
+        return;
     }
 
     try {
         const res = await fetch(SOURCES.xoilac.url);
         const data = await res.json();
-        const channels = [];
-
+        
+        let channels = [];
+        let catalogs = [];
+        
         if (data && data.providers) {
             data.providers.forEach(provider => {
+                const catalogId = `${SOURCES.xoilac.prefix}${provider.id}`;
+                let genres = new Set();
+                
                 if (provider.groups) {
                     provider.groups.forEach(group => {
                         const groupName = group.name || "Khác";
+                        genres.add(groupName);
+                        
                         if (group.channels) {
                             group.channels.forEach(ch => {
                                 let streamUrl = "";
                                 let reqHeaders = {};
                                 
-                                // Trích xuất link và header bảo vệ từ các lớp JSON
+                                // Trích xuất link và header bảo vệ
                                 if (ch.sources) {
                                     ch.sources.forEach(src => {
                                         if (src.contents) {
@@ -57,6 +63,7 @@ async function getPlaylist() {
                                 if (streamUrl) {
                                     channels.push({
                                         id: `${SOURCES.xoilac.prefix}${ch.id}`,
+                                        catalogId: catalogId, // Gắn kênh này vào đúng Catalog của nó
                                         name: ch.name || "Kênh không tên",
                                         group: groupName,
                                         logo: ch.home_logo || "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/FC_Barcelona_%28crest%29.svg/1024px-FC_Barcelona_%28crest%29.svg.png",
@@ -68,77 +75,82 @@ async function getPlaylist() {
                         }
                     });
                 }
+                
+                // Khởi tạo Danh mục (Catalog) cho Stremio từ Provider
+                catalogs.push({
+                    type: "tv",
+                    id: catalogId,
+                    name: provider.name ? `📺 ${provider.name}` : "🔴 Trực Tiếp",
+                    extra: genres.size > 0 ? [{ name: "genre", isRequired: false, options: [...genres] }] : []
+                });
             });
         }
-
-        caches.xoilac.data = channels;
-        caches.xoilac.time = Date.now();
-        return channels;
-
+        
+        cachedChannels = channels;
+        cachedCatalogs = catalogs;
+        lastFetch = Date.now();
     } catch (e) {
-        console.error("Lỗi đọc file JSON:", e);
-        return caches.xoilac.data; 
+        console.error("Lỗi đọc JSON:", e);
     }
 }
 
 // --- HÀM KHỞI TẠO ADD-ON ---
 async function initAddon() {
-    const xlData = await getPlaylist();
-
-    // Tự động gom tất cả các nhóm (VTV, SCTV, HTV, Thể Thao...) từ JSON
-    const allGroups = [...new Set(xlData.map(c => c.group).filter(Boolean))];
+    // Tải dữ liệu lần đầu để dựng khung xương cho Stremio
+    await loadData();
 
     const manifest = {
         id: "org.viscabarca.m3u",
-        version: "1.1.1", // Đã tăng version lên 1.1.1
+        version: "1.1.2", // Nâng version
         name: "Visca Barca TV",
-        description: "Hệ thống Trực tiếp & Truyền hình Siêu tốc",
+        description: "Hệ thống Đa Danh Mục (Thông minh & Gọn gàng)",
         resources: ["catalog", "meta", "stream"],
         types: ["tv"],
         idPrefixes: ["vb_xl_"], 
-        catalogs: [
-            {
-                type: "tv", id: "vb_all_catalog", name: "🔴 Trực Tiếp",
-                extra: [{ name: "genre", isRequired: false, options: allGroups }]
-            }
+        // Bơm toàn bộ danh mục tự động nhận diện được vào manifest
+        catalogs: cachedCatalogs.length > 0 ? cachedCatalogs : [
+            { type: "tv", id: "vb_xl_default", name: "🔴 Trực Tiếp" }
         ]
     };
 
     const builder = new addonBuilder(manifest);
 
+    // 1. GỬI DANH SÁCH KÊNH CHO TỪNG CATALOG
     builder.defineCatalogHandler(async ({ type, id, extra }) => {
-        let channels = [];
-        if (type === "tv" && id === "vb_all_catalog") {
-            channels = await getPlaylist();
-            
-            if (extra && extra.genre) {
-                channels = channels.filter(ch => ch.group === extra.genre);
-            }
+        await loadData(); // Đảm bảo dữ liệu luôn mới
+        
+        // Lọc ra đúng các kênh thuộc về Catalog (Provider) mà Stremio đang yêu cầu
+        let channels = cachedChannels.filter(c => c.catalogId === id);
+        
+        // Nếu người dùng chọn một nhóm cụ thể trong menu xổ xuống
+        if (extra && extra.genre) {
+            channels = channels.filter(ch => ch.group === extra.genre);
         }
         
         let metas = channels.map(ch => ({
             id: ch.id,
             type: "tv",
-            name: ch.name || "Kênh Thể Thao",
-            description: ch.group ? `Nhóm: ${ch.group}` : "Trực tiếp",
+            name: ch.name,
+            description: ch.group ? `Nhóm: ${ch.group}` : "",
             poster: ch.logo,
             posterShape: "square"
         }));
         
-        return { metas: metas };
+        return { metas };
     });
 
+    // 2. CHI TIẾT KÊNH
     builder.defineMetaHandler(async ({ type, id }) => {
         if (type === "tv") {
-            const channels = await getPlaylist();
-            const ch = channels.find(c => c.id === id);
+            await loadData();
+            const ch = cachedChannels.find(c => c.id === id);
             if (ch) {
                 return {
                     meta: {
                         id: ch.id,
                         type: "tv",
-                        name: ch.name || "Kênh Thể Thao",
-                        description: ch.group ? `Bạn đang xem kênh ${ch.name} thuộc nhóm ${ch.group}.` : "Nhấn vào luồng phát bên phải để xem.",
+                        name: ch.name,
+                        description: ch.group ? `Kênh ${ch.name} thuộc nhóm ${ch.group}.` : "",
                         poster: ch.logo,
                         posterShape: "square",
                         background: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=1935&auto=format&fit=crop"
@@ -149,17 +161,16 @@ async function initAddon() {
         return { meta: null };
     });
 
+    // 3. LUỒNG PHÁT (KÈM CHỐNG CHẶN)
     builder.defineStreamHandler(async ({ type, id }) => {
         if (type === "tv") {
-            const channels = await getPlaylist();
-            const ch = channels.find(c => c.id === id);
+            await loadData();
+            const ch = cachedChannels.find(c => c.id === id);
             if (ch && ch.url) {
                 let streamObj = { 
                     title: `▶ Phát ngay\nChất lượng tự động`, 
                     url: ch.url 
                 };
-                
-                // Đẩy header bảo vệ (như User-Agent) vào Stremio
                 if (ch.headers && Object.keys(ch.headers).length > 0) {
                     streamObj.behaviorHints = {
                         notWebReady: true,
